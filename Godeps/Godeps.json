@@ -1,0 +1,13 @@
+{
+	"ImportPath": "_/Users/fabriziomilo/workspace/gopath/src/github.com/Mistobaan/vegeta",
+	"GoVersion": "go1.3.3",
+	"Packages": [
+		"github.com/Mistobaan/vegeta"
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/bmizerany/perks/quantile",
+			"Rev": "6cb9d9d729303ee2628580d9aec5db968da3a607"
+		}
+	]
+}
