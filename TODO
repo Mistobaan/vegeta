@@ -1,0 +1,7 @@
+
+
+- expose an http endpoint to the running vegeta.
+
+- allow to gather requests from different results and process them together
+
+- be able to give a "session name and metrix to an attack"

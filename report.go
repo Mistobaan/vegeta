@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	vegeta "github.com/tsenart/vegeta/lib"
+	vegeta "github.com/Mistobaan/vegeta/lib"
 )
 
 func reportCmd() command {
