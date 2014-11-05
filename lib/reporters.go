@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"text/tabwriter"
+	"text/template"
 )
 
 // Reporter is an interface defining Report computation.
@@ -75,10 +76,27 @@ var ReportPlot ReporterFunc = func(r Results) ([]byte, error) {
 		series.Truncate(series.Len() - 1)
 	}
 
-	return []byte(fmt.Sprintf(plotsTemplate, dygraphJSLibSrc(), series)), nil
+	var out bytes.Buffer
+
+	ctx := struct {
+		JsSrc   string
+		Series  string
+		Results Results
+	}{
+		JsSrc:   string(dygraphJSLibSrc()),
+		Series:  series.String(),
+		Results: r,
+	}
+
+	err := plotsTemplate.Execute(&out, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return out.Bytes(), nil
 }
 
-const plotsTemplate = `<!doctype>
+var plotsTemplate *template.Template = template.Must(template.New("plot").Parse(`<!doctype>
 <html>
 <head>
   <title>Vegeta Plots</title>
@@ -87,12 +105,12 @@ const plotsTemplate = `<!doctype>
   <div id="latencies" style="font-family: Courier; width: 100%%; height: 600px"></div>
   <a href="#" download="vegetaplot.png" onclick="this.href = document.getElementsByTagName('canvas')[0].toDataURL('image/png').replace(/^data:image\/[^;]/, 'data:application/octet-stream')">Download as PNG</a>
   <script>
-	%s
+	{{.JsSrc}}
   </script>
   <script>
-  new Dygraph(
+  var g = new Dygraph(
     document.getElementById("latencies"),
-    [%s],
+    [{{.Series}}],
     {
       title: 'Vegeta Plot',
       labels: ['Seconds', 'ERR', 'OK'],
@@ -102,9 +120,56 @@ const plotsTemplate = `<!doctype>
       colors: ['#FA7878', '#8AE234'],
       legend: 'always',
       logscale: true,
-      strokeWidth: 1.3
+      strokeWidth: 1.3,
+      showRangeSelector: true,
+      rangeSelectorHeight: 30,
+      zoomCallback: function(minX, maxX, yRanges) {
+        var table = document.getElementsByTagName('table')[0];
+        filterTable("flash", table)
+      }
     }
   );
+
+  g.ready(function() {
+    console.log("Data loaded. x-axis range is:", g.xAxisRange());
+  });
+
+  function filterTable(term, table) {
+
+    var terms = term.toLowerCase().split(" ");
+    for (var r = 1; r < table.rows.length; r++) {
+      var display = '';
+      for (var i = 0; i < terms.length; i++) {
+        if (table.rows[r].innerHTML.replace(/<[^>]+>/g, "").toLowerCase().indexOf(terms[i]) < 0) {
+          display = 'none';
+        }
+        table.rows[r].style.display = display;
+      }
+    }
+  }
+
   </script>
 </body>
-</html>`
+<table style="text:align-center">
+  <tr>
+    <th>Timestamp</th>
+    <th>Return Code</th>
+    <th>Method </th>
+    <th>URL </th>
+    <th>In (bytes)</th>
+    <th>Out (bytes)</th>
+  </tr>
+  {{range .Results}}
+    <tr bgcolor="{{ if eq .Code 200 }} #8AE234 {{else}} #FA7878 {{end}}" >
+    <td align="center" valign="middle">{{.Timestamp}}</td>
+    <td align="center" valign="middle">{{.Code}}</td>
+    <td align="center" valign="middle">{{.Request.Method}}</td>
+    <td align="left" valign="middle"><a href="{{.Request.URL}}">{{.Request.URL}}</a></td>
+    <td align="center" valign="middle">{{.BytesIn}}</td>
+    <td align="center" valign="middle">{{.BytesOut}}</td>
+    </tr>
+  {{ else }}
+   <tr><b>No Results found</b></tr>
+  {{end}}
+  </table>
+</html>`))

@@ -183,5 +183,7 @@ func (a *Attacker) hit(tr Targeter) *Result {
 	}
 	res.Latency = time.Since(res.Timestamp)
 
+	res.Request = *tgt
+
 	return res
 }

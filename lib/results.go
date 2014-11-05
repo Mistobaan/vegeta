@@ -20,6 +20,7 @@ type Result struct {
 	BytesOut  uint64
 	BytesIn   uint64
 	Error     string
+	Request   Target
 }
 
 // Collect concurrently reads Results from multiple io.Readers until all of
