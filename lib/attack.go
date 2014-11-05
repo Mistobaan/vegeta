@@ -173,7 +173,7 @@ func (a *Attacker) hit(tr Targeter) *Result {
 	defer r.Body.Close()
 
 	res.BytesOut = uint64(req.ContentLength)
-	res.Code = uint16(r.StatusCode)
+	res.Code = r.StatusCode
 	if body, err := ioutil.ReadAll(r.Body); err != nil {
 		if res.Code < 200 || res.Code >= 300 {
 			res.Error = string(body)
