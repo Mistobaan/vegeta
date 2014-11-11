@@ -84,7 +84,6 @@ func Timeout(d time.Duration) func(*Attacker) {
 		tr.ResponseHeaderTimeout = d
 		a.dialer.Timeout = d
 		tr.Dial = a.dialer.Dial
-		a.client.Transport = tr
 	}
 }
 
@@ -95,7 +94,19 @@ func LocalAddr(addr net.IPAddr) func(*Attacker) {
 		tr := a.client.Transport.(*http.Transport)
 		a.dialer.LocalAddr = &net.TCPAddr{IP: addr.IP, Zone: addr.Zone}
 		tr.Dial = a.dialer.Dial
-		a.client.Transport = tr
+	}
+}
+
+// KeepAlive returns a functional option which toggles KeepAlive
+// connections on the dialer and transport.
+func KeepAlive(keepalive bool) func(*Attacker) {
+	return func(a *Attacker) {
+		tr := a.client.Transport.(*http.Transport)
+		tr.DisableKeepAlives = !keepalive
+		if !keepalive {
+			a.dialer.KeepAlive = 0
+			tr.Dial = a.dialer.Dial
+		}
 	}
 }
 
@@ -105,7 +116,6 @@ func TLSConfig(c *tls.Config) func(*Attacker) {
 	return func(a *Attacker) {
 		tr := a.client.Transport.(*http.Transport)
 		tr.TLSClientConfig = c
-		a.client.Transport = tr
 	}
 }
 
@@ -175,7 +185,7 @@ func (a *Attacker) hit(tr Targeter) *Result {
 	res.BytesOut = uint64(req.ContentLength)
 	res.Code = r.StatusCode
 	if body, err := ioutil.ReadAll(r.Body); err != nil {
-		if res.Code < 200 || res.Code >= 300 {
+		if res.Code < 200 || res.Code >= 400 {
 			res.Error = string(body)
 		}
 	} else {
