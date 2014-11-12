@@ -82,10 +82,12 @@ var ReportPlot ReporterFunc = func(r Results) ([]byte, error) {
 		JsSrc   string
 		Series  string
 		Results Results
+		Metrics *Metrics
 	}{
 		JsSrc:   string(dygraphJSLibSrc()),
 		Series:  series.String(),
 		Results: r,
+		Metrics: NewMetrics(r),
 	}
 
 	err := plotsTemplate.Execute(&out, ctx)
@@ -159,12 +161,45 @@ var plotsTemplate *template.Template = template.Must(template.New("plot").Parse(
     <th>In (bytes)</th>
     <th>Out (bytes)</th>
   </tr>
+  <tr>
+  {{ with .Metrics }}
+  <td>Requests[total]</td>
+  <td>{{.Requests}}</td>
+  </tr>
+  <tr>
+  <td>Duration[total, attack, wait]</td>
+  <td>{{.Duration}} + {{.Wait}},{{.Duration}}, {{.Wait}}, {{.Requests}}</td>
+  </tr>
+  <tr>
+  <td>Latencies[mean, 50, 95, 99, max]</td>
+  <td>{{.Latencies.Mean}}, {{.Latencies.P50}},{{ .Latencies.P95 }}, {{ .Latencies.P99}}, {{ .Latencies.Max }}</td>
+  </tr>
+
+  fmt.Fprintf(w, "Bytes In\t[total, mean]\t%d, %.2f\n", m.BytesIn.Total, m.BytesIn.Mean)
+  fmt.Fprintf(w, "Bytes Out\t[total, mean]\t%d, %.2f\n", m.BytesOut.Total, m.BytesOut.Mean)
+  fmt.Fprintf(w, "Success\t[ratio]\t%.2f%%\n", m.Success*100)
+  fmt.Fprintf(w, "Status Codes\t[code:count]\t")
+  for code, count := range m.StatusCodes {
+    fmt.Fprintf(w, "%s:%d  ", code, count)
+  }
+  {{ end }}
+</table>
+
+<table style="text:align-center">
+  <tr>
+    <th>Timestamp</th>
+    <th>Return Code</th>
+    <th>Method </th>
+    <th>URL </th>
+    <th>In (bytes)</th>
+    <th>Out (bytes)</th>
+  </tr>
   {{range .Results}}
     <tr bgcolor="{{ if eq .Code 200 }} #8AE234 {{else}} #FA7878 {{end}}" >
     <td align="center" valign="middle">{{.Timestamp}}</td>
     <td align="center" valign="middle">{{.Code}}</td>
-    <td align="center" valign="middle">{{.Request.Method}}</td>
-    <td align="left" valign="middle"><a href="{{.Request.URL}}">{{.Request.URL}}</a></td>
+    <td align="center" valign="middle">{{.Target.Method}}</td>
+    <td align="left" valign="middle"><a href="{{.Target.URL}}">{{.Target.URL}}</a></td>
     <td align="center" valign="middle">{{.BytesIn}}</td>
     <td align="center" valign="middle">{{.BytesOut}}</td>
     </tr>

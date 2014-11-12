@@ -1,6 +1,9 @@
 package vegeta
 
 import (
+	"io/ioutil"
+	"log"
+	"os"
 	"testing"
 	"time"
 )
@@ -11,7 +14,7 @@ func BenchmarkReportPlot(b *testing.B) {
 	results := make(Results, 50000)
 	for began, i := time.Now(), 0; i < len(results); i++ {
 		results[i] = &Result{
-			Code:      uint16(i % 600),
+			Code:      (i % 600),
 			Latency:   50 * time.Millisecond,
 			Timestamp: began.Add(time.Duration(i) * 50 * time.Millisecond),
 		}
@@ -23,5 +26,14 @@ func BenchmarkReportPlot(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		ReportPlot(results)
+	}
+
+	data, err := ReportPlot(results)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := ioutil.WriteFile("test.html", data, os.ModePerm); err != nil {
+		log.Fatal(err)
 	}
 }
