@@ -152,38 +152,91 @@ var plotsTemplate *template.Template = template.Must(template.New("plot").Parse(
 
   </script>
 </body>
-<table style="text:align-center">
-  <tr>
-    <th>Timestamp</th>
-    <th>Return Code</th>
-    <th>Method </th>
-    <th>URL </th>
-    <th>In (bytes)</th>
-    <th>Out (bytes)</th>
-  </tr>
-  <tr>
-  {{ with .Metrics }}
-  <td>Requests[total]</td>
-  <td>{{.Requests}}</td>
-  </tr>
-  <tr>
-  <td>Duration[total, attack, wait]</td>
-  <td>{{.Duration}} + {{.Wait}},{{.Duration}}, {{.Wait}}, {{.Requests}}</td>
-  </tr>
-  <tr>
-  <td>Latencies[mean, 50, 95, 99, max]</td>
-  <td>{{.Latencies.Mean}}, {{.Latencies.P50}},{{ .Latencies.P95 }}, {{ .Latencies.P99}}, {{ .Latencies.Max }}</td>
-  </tr>
 
-  fmt.Fprintf(w, "Bytes In\t[total, mean]\t%d, %.2f\n", m.BytesIn.Total, m.BytesIn.Mean)
-  fmt.Fprintf(w, "Bytes Out\t[total, mean]\t%d, %.2f\n", m.BytesOut.Total, m.BytesOut.Mean)
-  fmt.Fprintf(w, "Success\t[ratio]\t%.2f%%\n", m.Success*100)
-  fmt.Fprintf(w, "Status Codes\t[code:count]\t")
-  for code, count := range m.StatusCodes {
-    fmt.Fprintf(w, "%s:%d  ", code, count)
-  }
-  {{ end }}
-</table>
+<h2>Statistics</h2>
+<table>
+  {{ with .Metrics }}
+    <tr>
+     <th>Requests</th>
+     <th>Total</th>
+    </tr>
+    <tr>
+     <th></th>
+     <td>{{.Requests}}</td>
+    </tr>
+    <tr>
+      <th>Duration</th>
+      <th>Total</th>
+      <th>Duration</th>
+      <th>Wait</th>
+      <th>Attack</th>
+    </tr>
+    <tr>
+      <th></th>
+      <td>{{ .Duration }} + {{.Wait}}</td>
+      <td>{{.Duration}}</td>
+      <td>{{.Wait}}</td>
+      <td>{{.Requests}}</td>
+    </tr>
+    <tr>
+      <th>Latencies</th>
+      <th>Mean</th>
+      <th>50</th>
+      <th>95</th>
+      <th>99</th>
+      <th>Max</th>
+    </tr>
+    <tr>
+      <th></th>
+      <td>{{ .Latencies.Mean }}</td>
+      <td>{{ .Latencies.P50 }}</td>
+      <td>{{ .Latencies.P95 }}</td>
+      <td>{{ .Latencies.P99 }}</td>
+      <td>{{ .Latencies.Max }}</td>
+    </tr>
+    <tr>
+      <th>Bytes In</th>
+      <th>Total</th>
+      <th>Mean</th>
+    </tr>
+    <tr>
+      <th></th>
+      <td>{{ .BytesIn.Total }}</td>
+      <td>{{ .BytesIn.Mean }}</td>
+    </tr>
+    <tr>
+      <th>Bytes Out</th>
+      <th>Total</th>
+      <th>Mean</th>
+    </tr>
+    <tr>
+      <th></th>
+      <td>{{ .BytesOut.Total }}</td>
+      <td>{{ .BytesOut.Mean }}</td>
+    </tr>
+    <tr>
+      <th> Success  </th>
+      <th> Ratio </th>
+    </tr>
+    <tr>
+      <th> </th>
+      <td> {{ .Success }} * 100 </td>
+    </tr>
+  </table>
+
+   <h2>Status Codes</h2>
+     <table>
+     <tr>
+      <th> Code </th>
+      <th> Count </th>
+     </tr>
+     {{ range $code,$count := .StatusCodes }}
+     <tr>
+      <td>{{$code}}</td><td>{{$count}}</td>
+     </tr>
+     {{end}}
+   </table>
+{{ end }}
 
 <table style="text:align-center">
   <tr>
